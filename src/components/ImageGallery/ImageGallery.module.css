@@ -1,0 +1,12 @@
+.gallery {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.item {
+    width: calc(25% - 10px);
+    margin: 5px;
+}
