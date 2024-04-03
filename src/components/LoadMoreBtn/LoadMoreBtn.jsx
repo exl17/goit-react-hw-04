@@ -4,7 +4,7 @@ import styles from './LoadMoreBtn.module.css';
 const LoadMoreBtn = ({ onClick }) => {
   const handleClick = (e) => {
     e.preventDefault();
-    onClick(); 
+    onClick(e);
   };
 
   return (

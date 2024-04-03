@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
 import SearchBar from './components/SearchBar/SearchBar';
 import ImageGallery from './components/ImageGallery/ImageGallery';
 import Loader from './components/Loader/Loader';
 import ErrorMessage from './components/ErrorMessage/ErrorMessage';
 import LoadMoreBtn from './components/LoadMoreBtn/LoadMoreBtn';
+import ImageModal from './components/ImageModal/ImageModal';
 
 const App = () => {
   const [images, setImages] = useState([]);
@@ -12,6 +13,10 @@ const App = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+
+  const galleryRef = useRef(null);
 
   const fetchImages = useCallback(async () => {
     try {
@@ -24,7 +29,12 @@ const App = () => {
       if (data.errors) {
         throw new Error('Error fetching images. Please try again later.');
       }
-      setImages((prevImages) => [...prevImages, ...data.results]);
+
+      if (page === 1) {
+        setImages(data.results);
+      } else {
+        setImages(prevImages => [...prevImages, ...data.results]);
+      }
       setError(null);
     } catch (error) {
       setError(error.message);
@@ -33,31 +43,52 @@ const App = () => {
     }
   }, [searchQuery, page]);
 
-  const handleLoadMore = () => {
-    setPage((prevPage) => prevPage + 1);
+  const handleLoadMore = (e) => {
+    e.preventDefault();
+    setPage(prevPage => prevPage + 1);
+    if (galleryRef.current) {
+      galleryRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenModal = (image) => {
+    setSelectedImage(image);
+    setModalIsOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedImage(null);
+    setModalIsOpen(false);
   };
 
   useEffect(() => {
-    if (searchQuery !== '') {
-      setPage(1);
-      fetchImages();
-    }
-  }, [searchQuery, fetchImages]);
+    fetchImages();
+  }, [fetchImages]);
 
-  useEffect(() => {
-    if (page > 1) {
-      fetchImages();
-    }
-  }, [page, fetchImages]);
+  const handleSubmit = (query) => {
+    setSearchQuery(query);
+    setPage(1);
+  };
 
   return (
     <div>
-      <SearchBar onSubmit={setSearchQuery} />
+      <SearchBar onSubmit={handleSubmit} />
       <Toaster />
       {loading && <Loader />}
       {error && <ErrorMessage message={error} />}
-      {!loading && !error && <ImageGallery images={images} />}
+      {!loading && !error && 
+        <ImageGallery 
+          images={images} 
+          ref={galleryRef} 
+          onImageClick={handleOpenModal}
+        />
+      }
       {!loading && !error && images.length > 0 && <LoadMoreBtn onClick={handleLoadMore} />}
+      <ImageModal
+        isOpen={modalIsOpen} 
+        onRequestClose={handleCloseModal} 
+        image={selectedImage} 
+      />
     </div>
   );
 };
